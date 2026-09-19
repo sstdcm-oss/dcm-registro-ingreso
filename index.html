@@ -2,68 +2,193 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>DCM Registro de Ingreso V9 Híbrido</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DCM Registro de Ingreso — Emergencia V10</title>
 <style>
-:root{--b:#1769aa;--bg:#f3f5f7;--c:#fff;--t:#17202a;--m:#5f6b76;--ok:#168447;--warn:#9a6500;--err:#a52626}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--t)}main{max-width:760px;margin:auto;padding:14px}.card{background:var(--c);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0001}h1{font-size:22px;margin:0 0 4px}h2{font-size:19px;margin:0 0 10px}.sub{color:var(--m);font-size:14px;line-height:1.45}.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#e8f1f8;color:#1769aa;font-size:12px;font-weight:700;margin-top:8px}button,.file{width:100%;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:16px;margin-top:10px}.primary{background:var(--b);color:#fff}.secondary{background:#dfe4e9}.danger{background:#d7dce1}.success{background:var(--ok);color:#fff}input,select,textarea{width:100%;padding:12px;border:1px solid #ccd3da;border-radius:10px;font-size:16px;margin-top:6px}label{display:block;margin-top:10px;font-weight:700;font-size:14px}.status{padding:13px;border-radius:12px;background:#eef1f4;margin-top:12px;line-height:1.4;white-space:pre-wrap}.ok{background:#eaf7ef}.warn{background:#fff5e5}.err{background:#fdecec}video{width:100%;background:#111;border-radius:14px;display:block;max-height:52vh;object-fit:cover}.frame{position:relative}.guide{position:absolute;left:7%;right:7%;top:27%;height:46%;border:3px solid #fff;border-radius:12px;pointer-events:none;box-shadow:0 0 0 9999px #0003}.preview{max-width:100%;max-height:360px;display:none;border-radius:12px;margin-top:10px;object-fit:contain;background:#111}.raw{font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-word;background:#101418;color:#e7edf3;padding:12px;border-radius:10px;max-height:420px;overflow:auto}details{margin-top:12px}.small{font-size:12px;color:var(--m);line-height:1.4}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+body{font-family:Arial,sans-serif;margin:0;background:#eef1f4;color:#17202a}
+header{background:#123b5d;color:white;padding:18px}
+main{max-width:760px;margin:auto;padding:14px}
+.card{background:white;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 10px #0001}
+h1{font-size:22px;margin:0 0 5px}.sub{opacity:.85}
+h2{font-size:19px}
+label{display:block;font-weight:700;margin-top:13px}
+input,select,textarea{box-sizing:border-box;width:100%;padding:13px;margin-top:6px;border:1px solid #b9c2ca;border-radius:10px;font-size:16px}
+button{border:0;border-radius:10px;padding:13px 16px;font-size:16px;font-weight:700;margin:8px 5px 0 0;cursor:pointer}
+.primary{background:#1769aa;color:#fff}.green{background:#1f8a55;color:#fff}.gray{background:#dfe5e9}
+video{width:100%;border-radius:12px;background:#111;max-height:55vh;object-fit:cover}
+.status{padding:12px;border-radius:10px;background:#f1f5f8;margin:10px 0}
+.ok{background:#e7f6ec}.warn{background:#fff4d8}
+.small{font-size:13px;color:#5d6870}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.badge{display:inline-block;background:#e8f0f7;padding:5px 9px;border-radius:20px;font-size:12px}
 </style>
 </head>
-<body><main>
-<div class="card"><h1>DCM SERVICIOS Y CONSULTORÍA</h1><div class="sub">Registro de ingreso — lector híbrido PDF417 + OCR V9</div><span class="badge">PDF417 → OCR por zonas → validación → revisión manual</span></div>
+<body>
+<header>
+<h1>DCM — Registro de Ingreso</h1>
+<div class="sub">Versión de emergencia V10 · PDF417 + digitación manual</div>
+</header>
+<main>
 
-<div class="card"><h2>1. Opción principal: PDF417</h2><div class="sub">Primero intenta leer el código 2D del respaldo. Si falla, pasa a las dos fotos.</div>
-<div class="frame" style="margin-top:12px"><video id="video" playsinline muted></video><div class="guide"></div></div>
-<button class="primary" id="start">📷 INICIAR CÁMARA PDF417</button><button class="secondary" id="capture">🔎 CAPTURAR Y ANALIZAR PDF417</button><button class="danger" id="stop">DETENER CÁMARA</button><div class="status" id="status">Listo. Puedes iniciar el lector PDF417.</div></div>
+<div class="card">
+<h2>1. Identificación</h2>
+<div class="status warn"><b>Importante:</b> para el registro de mañana no dependemos del OCR. Si el lector no reconoce la cédula, puedes digitar los datos y continuar.</div>
+<video id="video" playsinline muted></video>
+<div id="scanStatus" class="status">Pulsa “Iniciar lector” y muestra el <b>código PDF417 del reverso</b> de la cédula.</div>
+<button class="primary" id="start">📷 Iniciar lector PDF417</button>
+<button class="gray" id="stop">Detener</button>
+</div>
 
-<div class="card"><h2>2. Respaldo: foto del frente + foto del respaldo</h2><div class="sub">Para obtener mejores resultados, toma la cédula física de cerca, completa, recta, enfocada y sin reflejos. No la fotografíes desde una pantalla.</div>
-<label>📸 Frente de la cédula<input id="front" class="file" type="file" accept="image/*" capture="environment"></label><img id="frontP" class="preview">
-<label>📸 Respaldo de la cédula<input id="back" class="file" type="file" accept="image/*" capture="environment"></label><img id="backP" class="preview">
-<button class="primary" id="ocr">🧠 ANALIZAR FRENTE + RESPALDO</button><div class="status" id="ocrStatus">Aún no se han analizado las dos caras.</div>
-<details><summary>Ver diagnóstico OCR</summary><div id="raw" class="raw">Sin resultado.</div></details></div>
+<div class="card">
+<h2>2. Datos de la persona</h2>
+<p class="small">Los datos detectados se pueden corregir antes de guardar.</p>
+<label>Nombre completo<input id="nombre" autocomplete="name"></label>
+<label>Número de identificación<input id="cedula" inputmode="numeric" autocomplete="off"></label>
+<div class="row">
+<label>Fecha de nacimiento<input id="fecha" type="date"></label>
+<label>Sexo
+<select id="sexo"><option value="">Seleccione</option><option>F</option><option>M</option><option>Otro</option></select>
+</label>
+</div>
+<label>RH<input id="rh" placeholder="Ej. O+"></label>
+<label>Teléfono<input id="telefono" inputmode="tel"></label>
+<label>Correo electrónico<input id="correo" type="email"></label>
+<label>Empresa<input id="empresa"></label>
+<label>NIT<input id="nit"></label>
+<label>ARL<input id="arl"></label>
+<label>EPS<input id="eps"></label>
+<label>Curso
+<select id="curso">
+<option value="">Seleccione</option>
+<option>Trabajo en alturas — Reentrenamiento</option>
+<option>Trabajo en alturas — Coordinador</option>
+<option>Trabajo en alturas — Básico/avanzado</option>
+<option>Otro</option>
+</select>
+</label>
+<label>Contacto de emergencia<input id="emergencia"></label>
+<label>Teléfono contacto de emergencia<input id="emergenciaTel" inputmode="tel"></label>
+<label>Observaciones<textarea id="observaciones" rows="3"></textarea></label>
 
-<div class="card"><h2>3. Datos de la persona</h2><div class="sub">El sistema solo precarga datos que parezcan válidos. Revisa y corrige antes de confirmar.</div>
-<label>Nombre completo<input id="name" autocomplete="name"></label><label>Número de identificación<input id="id" inputmode="numeric"></label><label>Fecha de nacimiento<input id="birth" type="date"></label><label>Sexo<input id="sex"></label><label>Grupo sanguíneo / RH<input id="blood"></label><label>Estatura<input id="height" placeholder="Ej. 1.79 m"></label><label>Lugar de nacimiento<input id="birthPlace"></label><label>Fecha de expedición<input id="issueDate" type="date"></label><label>Lugar de expedición<input id="issuePlace"></label>
-<button class="success" id="confirm">✅ CONFIRMAR DATOS DE LA CÉDULA</button><div class="status" id="confirmStatus">Revisa los datos y confirma para continuar.</div></div>
+<button class="green" id="save">💾 Guardar registro</button>
+<button class="gray" id="clear">Limpiar</button>
+<button class="gray" id="csv">⬇️ Exportar Excel/CSV</button>
+</div>
 
-<div class="card"><h2>4. Datos del registro DCM</h2>
-<label>Celular<input id="phone"></label><label>Correo<input id="email" type="email"></label><label>Empresa<input id="company"></label><label>NIT<input id="nit"></label><label>Representante legal<input id="legal"></label><label>ARL<input id="arl"></label><label>EPS<input id="eps"></label>
-<label>Curso<select id="course"><option value="">Seleccione...</option><option>Trabajador autorizado</option><option>Reentrenamiento trabajo en alturas</option><option>Coordinador de trabajo en alturas</option><option>Jefe de área para trabajo en alturas</option><option>Administrador del programa de prevención y protección contra caídas</option><option>Otro</option></select></label>
-<label>Sector económico<input id="sector"></label><label>Labor<input id="job"></label><label>Lectura<select id="reading"><option value="">Seleccione...</option><option>Lee</option><option>No lee</option></select></label><label>Escritura<select id="writing"><option value="">Seleccione...</option><option>Escribe</option><option>No escribe</option></select></label><label>Nivel de formación<input id="education"></label><label>Tipo de sangre (confirmación)<input id="blood2"></label><label>Género<input id="gender"></label><label>Contacto de emergencia - Nombre<input id="emergencyName"></label><label>Contacto de emergencia - Celular<input id="emergencyPhone"></label>
-<label>¿Padece alguna enfermedad?<select id="disease"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select></label><label>¿Ha sufrido lesiones?<select id="injuries"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select></label><label>¿Se encuentra en estado de embarazo?<select id="pregnancy"><option value="">Seleccione...</option><option>No</option><option>Sí</option><option>No aplica</option></select></label><label>¿Está bajo efectos del alcohol o sustancias?<select id="substances"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select></label><label>¿Consume medicamentos psiquiátricos?<select id="medications"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select></label><label>Comentarios<textarea id="comments"></textarea></label>
-<button class="primary" id="save">💾 GUARDAR REGISTRO</button><div class="status" id="saveStatus">El registro todavía no se ha guardado.</div></div>
+<div class="card">
+<h2>3. Registros guardados en este dispositivo</h2>
+<div id="count" class="badge">0 registros</div>
+<div id="list" class="small" style="margin-top:10px"></div>
+<p class="small"><b>Privacidad:</b> esta versión guarda los registros únicamente en el navegador del dispositivo. No subas datos reales a un repositorio público de GitHub.</p>
+</div>
 
-<div class="card"><h2>5. Entrenador</h2><div class="sub">Lista de prueba; después la conectaremos con los entrenadores autorizados de DCM.</div><label>Entrenador<select id="trainer"><option value="">Primero seleccione un curso</option></select></label></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/iife/reader/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script type="module">
-import{BrowserPDF417Reader}from'https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm';
-const $=id=>document.getElementById(id);let controls=null,reader=null;
-function msg(e,t,c=''){e.className='status '+c;e.textContent=t}
-function preview(inp,img){inp.addEventListener('change',()=>{const f=inp.files?.[0];if(!f)return;img.src=URL.createObjectURL(f);img.style.display='block'})}preview($('front'),$('frontP'));preview($('back'),$('backP'));
-function clean(b,a,z){let s='';for(let i=a;i<z&&i<b.length;i++){let c=b[i];if(c===0)break;s+=(c>=32&&c<=126)?String.fromCharCode(c):''}return s.trim()}
-function parse(raw){let b=Array.from(raw,x=>x.charCodeAt(0)&255);if(b.length<160)throw Error('Contenido PDF417 demasiado corto');let doc=clean(b,48,58).replace(/^0+/,'')||clean(b,48,58),last=clean(b,58,80),last2=clean(b,81,104),first=clean(b,104,127),mid=clean(b,127,150),sex=clean(b,151,152),y=clean(b,152,156),m=clean(b,156,158),d=clean(b,158,160),rh=clean(b,166,168);return{doc,full:[first,mid,last,last2].filter(Boolean).join(' ').replace(/\s+/g,' '),sex,rh,birth:y&&m&&d?`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`:''}}
-function fill(raw){let p=parse(raw);$('name').value=p.full;$('id').value=p.doc;$('birth').value=p.birth;$('sex').value=p.sex;$('blood').value=p.rh;$('blood2').value=p.rh;$('gender').value=p.sex;msg($('status'),'✅ PDF417 leído y datos precargados. Revisa y confirma.','ok')}
-$('start').onclick=async()=>{try{reader=new BrowserPDF417Reader(250);let ds=await BrowserPDF417Reader.listVideoInputDevices(),d=ds.find(x=>/back|rear|environment|trasera/i.test(x.label))||ds.at(-1);controls=await reader.decodeFromVideoDevice(d?.deviceId,$('video'),r=>{if(r){fill(r.getText?.()||r.text||'');controls?.stop();controls=null}});msg($('status'),'📷 Cámara activa. Coloca el PDF417 completo dentro del recuadro.')}catch(e){msg($('status'),'❌ No se pudo iniciar PDF417. Usa las dos fotos.','err')}};
-$('capture').onclick=async()=>{try{let v=$('video');if(!v.videoWidth)throw Error('La cámara aún no entregó imagen');let c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);let blob=await new Promise(x=>c.toBlob(x,'image/jpeg',.98));let r=await ZXingWASM.readBarcodes(blob,{formats:['PDF417'],tryHarder:true,maxNumberOfSymbols:1});if(!r?.[0]?.text)throw Error();fill(r[0].text)}catch(e){msg($('status'),'⚠️ No se pudo leer el PDF417. Pasa a las dos fotos.','warn')}};
-$('stop').onclick=()=>{controls?.stop();controls=null;msg($('status'),'Cámara detenida.')};
 
-function loadImage(file){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file)})}
-function prepVariants(file){return loadImage(file).then(im=>{const max=1800,scale=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));const w=Math.max(900,Math.round(im.naturalWidth*scale)),h=Math.max(600,Math.round(im.naturalHeight*scale));const variants=[];for(const mode of ['normal','gray','contrast','threshold']){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);if(mode!=='normal'){const d=x.getImageData(0,0,w,h),p=d.data;for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];if(mode==='gray'){p[i]=p[i+1]=p[i+2]=g}else if(mode==='contrast'){g=Math.max(0,Math.min(255,(g-128)*1.8+128));p[i]=p[i+1]=p[i+2]=g}else{g=g>165?255:0;p[i]=p[i+1]=p[i+2]=g}}x.putImageData(d,0,0)}variants.push({mode,blob:c.toDataURL('image/jpeg',.95)})}return variants})}
-function norm(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[|]/g,'I')}
-function unique(a){return [...new Set(a.filter(Boolean))]}
-function extractId(t){const u=norm(t).replace(/O/g,'0');const nums=[...u.matchAll(/\b\d[\d .-]{5,12}\d\b/g)].map(m=>m[0].replace(/\D/g,''));const valid=nums.filter(n=>n.length>=7&&n.length<=10);return valid.sort((a,b)=>b.length-a.length)[0]||''}
-function extractBlood(t){const u=norm(t).replace(/\s+/g,' ');const m=u.match(/\b(AB|A|B|O)\s*([+-])\b/);return m?m[1]+m[2]:''}
-function extractSex(t){const u=norm(t);if(/\bMASCULINO\b|\bSEXO\s*[:.-]?\s*M\b/.test(u))return'M';if(/\bFEMENINO\b|\bSEXO\s*[:.-]?\s*F\b/.test(u))return'F';return''}
-function extractDates(t){const out=[];for(const m of t.matchAll(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g)){const d=+m[1],mo=+m[2];if(d>=1&&d<=31&&mo>=1&&mo<=12)out.push(`${m[3]}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`)}for(const m of t.matchAll(/\b(\d{1,2})[- ]([A-Z]{3})[- ](\d{4})\b/gi)){const mo={ENE:1,FEB:2,MAR:3,ABR:4,MAY:5,JUN:6,JUL:7,AGO:8,SEP:9,OCT:10,NOV:11,DIC:12}[norm(m[2])];if(mo)out.push(`${m[3]}-${String(mo).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`)}return unique(out)}
-function cleanNameLine(s){return s.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ ]/g,' ').replace(/\s+/g,' ').trim()}
-function extractName(t){const bad=/^(REPUBLICA|COLOMBIA|CEDULA|CIUDADANIA|FECHA|NACIMIENTO|EXPEDICION|SEXO|ESTATURA|LUGAR|NUMERO|IDENTIFICACION|REGISTRADURIA|RH|COLOMBIANA|DERECHO|ELECTORAL|DOCUMENTO|TARJETA)$/;const lines=t.split(/\n+/).map(cleanNameLine).filter(Boolean);const cand=[];for(const line of lines){const words=line.split(' ').filter(Boolean);if(words.length>=2&&words.length<=6&&line.length>=8&&line.length<=55&&!bad.test(words[0])&&!/\d/.test(line)){let score=words.length*2;if(words.length===4||words.length===5)score+=4;if(/[A-ZÁÉÍÓÚÜÑ]{3,}/.test(line))score+=2;cand.push({line,score})}}cand.sort((a,b)=>b.score-a.score);return cand[0]?.line||''}
-function extractHeight(t){const u=norm(t);const m=u.match(/\b(1[.,]\d{2}|1[.,]\d{1})\b/);return m?m[1].replace(',', '.')+' m':''}
-async function recognizeVariant(data,psm){const r=await Tesseract.recognize(data,'spa',{logger:()=>{},tessedit_pageseg_mode:psm});return r.data}
-async function analyzeFace(file,label){const vars=await prepVariants(file);const results=[];for(const v of vars){for(const psm of [6,11]){try{const d=await recognizeVariant(v.blob,psm);results.push({label,mode:v.mode,psm,text:d.text||'',confidence:d.confidence||0})}catch(e){}}}return results}
-$('ocr').onclick=async()=>{const f=$('front').files?.[0],b=$('back').files?.[0];if(!f||!b){msg($('ocrStatus'),'⚠️ Selecciona frente y respaldo.','warn');return}try{msg($('ocrStatus'),'🧠 Preparando imágenes y leyendo por varias versiones… Esto puede tardar un poco.');$('ocr').disabled=true;const all=await Promise.all([analyzeFace(f,'FRENTE'),analyzeFace(b,'RESPALDO')]);const res=all.flat();const front=res.filter(r=>r.label==='FRENTE'),back=res.filter(r=>r.label==='RESPALDO');const frontText=front.map(r=>r.text).join('\n');const backText=back.map(r=>r.text).join('\n');const allText=frontText+'\n'+backText;const name=extractName(frontText),doc=extractId(allText),blood=extractBlood(allText),sex=extractSex(frontText),dates=extractDates(frontText),height=extractHeight(frontText);if(name)$('name').value=name;if(doc)$('id').value=doc;if(blood)$('blood').value=blood;if(sex)$('sex').value=sex;if(dates.length){$('birth').value=dates[0];if(dates[1])$('issueDate').value=dates[1]}if(height)$('height').value=height;$('blood2').value=blood;$('gender').value=sex;$('raw').textContent=res.map(r=>`[${r.label} | ${r.mode} | PSM ${r.psm} | confianza ${Number(r.confidence).toFixed(1)}%]\n${r.text}`).join('\n\n');let found=[];if(name)found.push('nombre');if(doc)found.push('identificación');if(dates[0])found.push('fecha');if(blood)found.push('RH');if(sex)found.push('sexo');if(height)found.push('estatura');msg($('ocrStatus'),found.length?`✅ OCR terminado. Encontró: ${found.join(', ')}. Revisa cada campo antes de confirmar.`:'⚠️ El OCR no encontró datos confiables. Mejora las fotos e inténtalo de nuevo o diligencia manualmente.',found.length?'ok':'warn')}catch(e){console.error(e);msg($('ocrStatus'),'❌ No se pudo completar el OCR. Puedes diligenciar los datos manualmente.','err')}finally{$('ocr').disabled=false}};
-$('confirm').onclick=()=>{if(!$('name').value.trim()||!$('id').value.trim()||!$('birth').value){msg($('confirmStatus'),'⚠️ Falta nombre, identificación o fecha de nacimiento.','warn');return}$('blood2').value=$('blood').value;$('gender').value=$('sex').value;msg($('confirmStatus'),'✅ Datos confirmados. Completa el registro DCM.','ok')};
-const map={'Trabajador autorizado':['Entrenador disponible 1','Entrenador disponible 2'],'Reentrenamiento trabajo en alturas':['Entrenador disponible 1','Entrenador disponible 3'],'Coordinador de trabajo en alturas':['Entrenador disponible 2'],'Jefe de área para trabajo en alturas':['Entrenador disponible 1'],'Administrador del programa de prevención y protección contra caídas':['Entrenador disponible 3'],'Otro':['Asignar manualmente']};$('course').onchange=e=>{$('trainer').innerHTML='<option value="">Seleccione entrenador...</option>';for(const n of(map[e.target.value]||[]))$('trainer').innerHTML+=`<option>${n}</option>`};
-$('save').onclick=()=>{const n=$('name').value.trim(),i=$('id').value.trim(),c=$('course').value;if(!n||!i||!c){msg($('saveStatus'),'⚠️ Para esta prueba necesitas nombre, identificación y curso.','warn');return}const r={marcaTemporal:new Date().toISOString(),nombre:n,identificacion:i,fechaNacimiento:$('birth').value,sexo:$('sex').value,rh:$('blood').value,estatura:$('height').value,lugarNacimiento:$('birthPlace').value,fechaExpedicion:$('issueDate').value,lugarExpedicion:$('issuePlace').value,celular:$('phone').value,correo:$('email').value,empresa:$('company').value,nit:$('nit').value,representanteLegal:$('legal').value,arl:$('arl').value,eps:$('eps').value,curso:c,sector:$('sector').value,labor:$('job').value,entrenador:$('trainer').value};const a=JSON.parse(localStorage.getItem('dcm_registros_prueba')||'[]');a.push(r);localStorage.setItem('dcm_registros_prueba',JSON.stringify(a));msg($('saveStatus'),'✅ Registro guardado en esta prueba.','ok')};
-</script></body></html>
+<script src="https://unpkg.com/@zxing/library@0.21.3"></script>
+<script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+<script>
+const $=id=>document.getElementById(id);
+let reader=null, controls=null;
+const fields=["nombre","cedula","fecha","sexo","rh","telefono","correo","empresa","nit","arl","eps","curso","emergencia","emergenciaTel","observaciones"];
+
+function status(msg, cls=""){ $("scanStatus").className="status "+cls; $("scanStatus").innerHTML=msg; }
+
+function stop(){
+  try{ if(controls) controls.stop(); }catch(e){}
+  controls=null;
+  try{ if(reader) reader.reset(); }catch(e){}
+  $("video").srcObject?.getTracks?.().forEach(t=>t.stop());
+}
+
+$("start").onclick=async()=>{
+  stop();
+  if(!window.ZXingBrowser){status("No cargó el lector. Revisa que tengas internet y vuelve a abrir la página.","warn");return}
+  try{
+    const hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.PDF_417]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    reader=new ZXingBrowser.BrowserMultiFormatReader(hints);
+    status("Buscando PDF417… coloca el reverso de la cédula dentro del recuadro y mantén el teléfono quieto.","");
+    controls=await reader.decodeFromConstraints(
+      {video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}},
+      $("video"),
+      (result,err)=>{
+        if(result){
+          const text=result.getText();
+          parsePDF417(text);
+          status("✅ PDF417 leído. Revisa los campos y corrige cualquier dato antes de guardar.","ok");
+          stop();
+        }
+      }
+    );
+  }catch(e){
+    console.error(e);
+    status("No se pudo iniciar la cámara. Da permiso a la cámara y asegúrate de abrir la página por HTTPS.","warn");
+  }
+};
+$("stop").onclick=stop;
+
+function clean(s){return (s||"").replace(/\s+/g," ").trim()}
+function setIf(id,val){if(val && clean(val)) $(id).value=clean(val)}
+
+function parsePDF417(raw){
+  // Parser tolerante para el PDF417 de la cédula colombiana.
+  const s=raw.replace(/\0/g," ");
+  const compact=s.replace(/\s+/g," ");
+  const idm=compact.match(/\b\d{6,12}\b/);
+  if(idm) setIf("cedula",idm[0]);
+
+  const dates=[...compact.matchAll(/\b(\d{2})[-\/](\d{2})[-\/](\d{4})\b/g)];
+  if(dates.length){
+    // Preferimos la primera fecha razonable como nacimiento; el usuario puede corregir.
+    const d=dates[0];
+    setIf("fecha",`${d[3]}-${d[2]}-${d[1]}`);
+  }
+
+  // Intentos conservadores de sexo/RH. No se fuerza un valor si no es claro.
+  const upper=compact.toUpperCase();
+  if(/\bSEXO\b.*?\bF\b/.test(upper) || /\bFEMENINO\b/.test(upper)) setIf("sexo","F");
+  else if(/\bSEXO\b.*?\bM\b/.test(upper) || /\bMASCULINO\b/.test(upper)) setIf("sexo","M");
+
+  const rhm=upper.match(/\b(O|A|B|AB)\s*([+-])\b/);
+  if(rhm) setIf("rh",rhm[1]+rhm[2]);
+
+  // Nombre: no se inventa. Si el formato contiene marcadores típicos, intentamos una extracción.
+  const nm=compact.match(/(?:APELLIDOS?|NOMBRES?)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ ]{5,60})/i);
+  if(nm) setIf("nombre",nm[1]);
+
+  $("scanStatus").innerHTML += '<br><span class="small">Si algún campo queda vacío o incorrecto, simplemente corrígelo manualmente.</span>';
+}
+
+function data(){
+  const o={};
+  fields.forEach(f=>o[f]=$(f).value.trim());
+  o.fechaRegistro=new Date().toLocaleString("es-CO");
+  return o;
+}
+function records(){return JSON.parse(localStorage.getItem("dcm_registros_v10")||"[]")}
+function render(){
+  const r=records(); $("count").textContent=`${r.length} registro${r.length===1?"":"s"}`;
+  $("list").innerHTML=r.slice(-8).reverse().map((x,i)=>`<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>${escapeHtml(x.nombre||"(sin nombre)")}</b> · ${escapeHtml(x.cedula||"(sin cédula)")} · ${escapeHtml(x.curso||"")}</div>`).join("") || "Aún no hay registros.";
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+$("save").onclick=()=>{
+  const o=data();
+  if(!o.nombre || !o.cedula){alert("Antes de guardar, diligencia al menos Nombre completo y Número de identificación.");return}
+  const r=records();r.push(o);localStorage.setItem("dcm_registros_v10",JSON.stringify(r));render();alert("Registro guardado en este dispositivo."); 
+};
+$("clear").onclick=()=>fields.forEach(f=>$(f).value="");
+
+$("csv").onclick=()=>{
+ const r=records(); if(!r.length){alert("No hay registros guardados.");return}
+ const headers=fields.concat(["fechaRegistro"]);
+ const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+ const csv="\ufeff"+headers.map(esc).join(";")+"\n"+r.map(o=>headers.map(h=>esc(o[h])).join(";")).join("\n");
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DCM_registros_ingreso.csv";a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+render();
+</script>
+</body>
+</html>
