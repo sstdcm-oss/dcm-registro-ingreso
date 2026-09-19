@@ -3,39 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DCM Registro de Ingreso V11</title>
+<title>DCM Registro de Ingreso V12</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f5;color:#17212b}
 header{background:#123b5d;color:#fff;padding:18px}.wrap{max-width:780px;margin:auto;padding:14px}
 .card{background:#fff;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 12px #0001}
 h1{margin:0;font-size:23px}h2{font-size:19px;margin-top:0}
-.status{padding:12px;border-radius:10px;background:#edf3f7;margin:10px 0}.ok{background:#e6f7ec}.warn{background:#fff2d7}
-video{display:block;width:100%;height:auto;max-height:58vh;background:#111;border-radius:12px;object-fit:cover}
-.frame{position:relative}.guide{position:absolute;left:7%;right:7%;bottom:18%;height:27%;border:3px solid #20d26a;border-radius:10px;pointer-events:none;box-shadow:0 0 0 9999px #0003}
-button{border:0;border-radius:10px;padding:13px 16px;margin:7px 5px 0 0;font-weight:700;font-size:16px}.primary{background:#1769aa;color:white}.green{background:#16824c;color:white}.gray{background:#dce3e8}
-label{display:block;font-weight:700;margin-top:12px}input,select,textarea{width:100%;padding:13px;border:1px solid #b9c3ca;border-radius:10px;font-size:16px;margin-top:5px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.small{font-size:13px;color:#5d6870}
-@media(max-width:560px){.row{grid-template-columns:1fr}}
-.badge{display:inline-block;background:#e8f0f6;padding:5px 9px;border-radius:18px;font-size:12px}
+.status{padding:12px;border-radius:10px;background:#edf3f7;margin:10px 0}.ok{background:#e6f7ec}.warn{background:#fff2d7}.err{background:#fde8e8}
+video,img.preview{display:block;width:100%;max-height:58vh;background:#111;border-radius:12px;object-fit:contain}
+.frame{position:relative}.guide{position:absolute;left:6%;right:6%;bottom:16%;height:28%;border:3px solid #20d26a;border-radius:10px;pointer-events:none;box-shadow:0 0 0 9999px #0003}
+button{border:0;border-radius:10px;padding:13px 16px;margin:7px 5px 0 0;font-weight:700;font-size:16px}.primary{background:#1769aa;color:white}.green{background:#16824c;color:white}.gray{background:#dce3e8}.orange{background:#d97904;color:white}
+input,select,textarea{width:100%;padding:13px;border:1px solid #b9c3ca;border-radius:10px;font-size:16px;margin-top:5px}label{display:block;font-weight:700;margin-top:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.small{font-size:13px;color:#5d6870}.badge{display:inline-block;background:#e8f0f6;padding:5px 9px;border-radius:18px;font-size:12px}
+#photoInput{display:none}@media(max-width:560px){.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1>DCM — Registro de Ingreso</h1><div>V11 · lector PDF417 optimizado + digitación de respaldo</div></header>
+<header><h1>DCM — Registro de Ingreso</h1><div>V12 · cámara + foto PDF417 + digitación</div></header>
 <div class="wrap">
+
 <div class="card">
-<h2>1. Escanear cédula</h2>
-<div class="status warn"><b>Importante:</b> usa la cédula física. Coloca únicamente el código PDF417 dentro de la zona verde. Mantén el teléfono quieto y deja que enfoque.</div>
-<div class="frame"><video id="video" playsinline muted></video><div class="guide"></div></div>
-<div id="status" class="status">Pulsa <b>Iniciar lector</b>.</div>
-<button id="start" class="primary">📷 Iniciar lector PDF417</button>
+<h2>1. Identificar la cédula</h2>
+<div class="status warn"><b>Tres opciones:</b> cámara en vivo, foto del reverso o digitación manual. El sistema no obliga a que el lector funcione.</div>
+
+<div class="frame"><video id="video" playsinline muted></video><div class="guide" id="guide"></div></div>
+<div id="status" class="status">Elige una opción.</div>
+
+<button id="start" class="primary">📷 Cámara en vivo</button>
 <button id="torch" class="gray">🔦 Luz</button>
 <button id="stop" class="gray">Detener</button>
-<p class="small">Si después de 10–15 segundos no lee, pulsa Detener y continúa llenando el formulario. No se pierde el registro.</p>
+<hr style="border:0;border-top:1px solid #ddd;margin:16px 0">
+<button id="take" class="orange">📸 Tomar foto y leer PDF417</button>
+<button id="choose" class="gray">🖼️ Elegir foto de galería</button>
+<input id="photoInput" type="file" accept="image/*" capture="environment">
+<img id="preview" class="preview" style="display:none;margin-top:10px">
+
+<p class="small"><b>Para la foto:</b> toma el reverso completo de la cédula, con buena luz, sin reflejos y procurando que el PDF417 quede grande y nítido.</p>
 </div>
 
 <div class="card">
 <h2>2. Datos de la persona</h2>
-<p class="small">Revisa siempre los datos antes de guardar.</p>
+<p class="small">Revisa y corrige antes de guardar.</p>
 <label>Nombre completo<input id="nombre"></label>
 <label>Número de identificación<input id="cedula" inputmode="numeric"></label>
 <div class="row">
@@ -55,13 +63,13 @@ label{display:block;font-weight:700;margin-top:12px}input,select,textarea{width:
 <label>Observaciones<textarea id="observaciones" rows="3"></textarea></label>
 <button id="save" class="green">💾 Guardar registro</button>
 <button id="clear" class="gray">Limpiar</button>
-<button id="csv" class="gray">⬇️ Exportar CSV para Excel</button>
+<button id="csv" class="gray">⬇️ Exportar para Excel</button>
 </div>
 
 <div class="card">
 <h2>3. Registros guardados</h2><span id="count" class="badge">0 registros</span>
 <div id="list" class="small" style="margin-top:10px"></div>
-<p class="small"><b>Uso temporal:</b> esta versión guarda los datos en el navegador del teléfono. No uses un repositorio público de GitHub para almacenar fotografías o bases de datos reales.</p>
+<p class="small"><b>Uso temporal:</b> los datos se guardan en este navegador. No guardes fotos reales de cédulas en GitHub.</p>
 </div>
 </div>
 
@@ -69,82 +77,137 @@ label{display:block;font-weight:700;margin-top:12px}input,select,textarea{width:
 <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 <script>
 const $=id=>document.getElementById(id);
-let reader=null, controls=null, track=null, torch=false;
+let reader=null,controls=null,track=null,torch=false;
 const F=["nombre","cedula","fecha","sexo","rh","telefono","correo","empresa","nit","arl","eps","curso","emergencia","emergenciaTel","observaciones"];
+
 function stat(t,c=""){ $("status").className="status "+c; $("status").innerHTML=t; }
 function stop(){
- try{if(controls)controls.stop()}catch(e){}
- controls=null;
- try{if(reader)reader.reset()}catch(e){}
- try{if(track)track.stop()}catch(e){}
- track=null; $("video").srcObject=null;
+ try{if(controls)controls.stop()}catch(e){} controls=null;
+ try{if(reader)reader.reset()}catch(e){} reader=null;
+ try{if(track)track.stop()}catch(e){} track=null;
+ const v=$("video"); if(v.srcObject)v.srcObject=null;
 }
-async function setCameraFeatures(){
+function setv(id,v){if(v && String(v).trim())$(id).value=String(v).trim()}
+
+async function setupTrack(){
  try{
   const s=$("video").srcObject;if(!s)return;
-  track=s.getVideoTracks()[0]; if(!track)return;
-  const caps=track.getCapabilities?track.getCapabilities():{};
-  const c={};
+  track=s.getVideoTracks()[0];if(!track)return;
+  const caps=track.getCapabilities?track.getCapabilities():{};const c={};
   if(caps.focusMode && caps.focusMode.includes("continuous"))c.focusMode="continuous";
-  if(caps.zoom){c.zoom=Math.min(caps.zoom.max, Math.max(caps.zoom.min, caps.zoom.min+(caps.zoom.max-caps.zoom.min)*0.25));}
+  if(caps.zoom)c.zoom=Math.min(caps.zoom.max,caps.zoom.min+(caps.zoom.max-caps.zoom.min)*.20);
   if(Object.keys(c).length)await track.applyConstraints({advanced:[c]});
  }catch(e){}
 }
+
 $("start").onclick=async()=>{
- stop();
+ stop(); $("preview").style.display="none";
  try{
-  if(!window.ZXingBrowser)throw new Error("ZXing no cargó");
-  const hints=new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.PDF_417]);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-  hints.set(ZXing.DecodeHintType.ALSO_INVERTED,true);
-  // Usamos el lector especializado PDF417, no el lector general.
   reader=new ZXingBrowser.BrowserPDF417Reader();
-  try{reader.setHints(hints)}catch(e){}
-  stat("🔎 Buscando PDF417… acerca o aleja lentamente la cédula hasta que el código quede nítido.");
+  stat("🔎 Buscando PDF417… mueve lentamente la cédula hasta que el código quede nítido.");
   controls=await reader.decodeFromConstraints({
-    video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1440},frameRate:{ideal:30}}
-  },$("video"),async(result,err)=>{
-    if(result){
-      const raw=result.getText();
-      parse(raw);
-      stat("✅ ¡Cédula leída! Revisa los datos antes de guardar.","ok");
-      stop();
-    }
+   video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1440},frameRate:{ideal:30}}
+  },$("video"),(result,err)=>{
+   if(result){parse(result.getText());stat("✅ PDF417 leído. Revisa los datos antes de guardar.","ok");stop();}
   });
-  await setCameraFeatures();
- }catch(e){
-  console.error(e);
-  stat("⚠️ No se pudo iniciar el lector. Verifica permiso de cámara y vuelve a intentarlo.","warn");
- }
+  await setupTrack();
+ }catch(e){console.error(e);stat("⚠️ No se pudo iniciar la cámara. Puedes usar “Elegir foto de galería” o digitar manualmente.","warn")}
 };
 $("stop").onclick=stop;
+
 $("torch").onclick=async()=>{
  try{
   if(!track)track=$("video").srcObject?.getVideoTracks?.()[0];
-  if(!track){stat("Primero inicia el lector.","warn");return}
-  const caps=track.getCapabilities(); if(!caps.torch){stat("Este teléfono/navegador no permite controlar la luz desde la página.","warn");return}
-  torch=!torch; await track.applyConstraints({advanced:[{torch} ]});
+  if(!track){stat("Primero inicia la cámara.","warn");return}
+  const caps=track.getCapabilities();if(!caps.torch){stat("La luz no puede controlarse desde este teléfono/navegador.","warn");return}
+  torch=!torch;await track.applyConstraints({advanced:[{torch}]});
  }catch(e){stat("No fue posible cambiar la luz.","warn")}
 };
 
-function setv(id,v){if(v && String(v).trim())$(id).value=String(v).trim()}
+// --- FOTO: se intenta decodificar la imagen original y varios recortes/preprocesados ---
+$("choose").onclick=()=> $("photoInput").click();
+$("take").onclick=()=>{
+ if(!$("video").srcObject){stat("Primero inicia la cámara para tomar una foto.","warn");return}
+ const v=$("video"), c=document.createElement("canvas");
+ c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+ c.toBlob(b=>processImageBlob(b),"image/jpeg",.95);
+};
+
+$("photoInput").onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ await processImageBlob(f);
+ e.target.value="";
+};
+
+async function processImageBlob(blob){
+ stat("⏳ Procesando foto… intentando leer el PDF417, no OCR.");
+ const url=URL.createObjectURL(blob);
+ const img=new Image();
+ img.onload=async()=>{
+  $("preview").src=url;$("preview").style.display="block";
+  try{
+   const result=await decodeImageWithVariants(img);
+   parse(result.getText());
+   stat("✅ PDF417 encontrado en la foto. Revisa los datos antes de guardar.","ok");
+  }catch(e){
+   stat("❌ No se encontró un PDF417 legible en esta foto. Prueba otra foto más cercana/nítida o continúa manualmente.","warn");
+  }finally{setTimeout(()=>URL.revokeObjectURL(url),5000)}
+ };
+ img.onerror=()=>stat("No se pudo abrir la foto.","err");
+ img.src=url;
+}
+
+async function decodeOne(source){
+ const r=new ZXingBrowser.BrowserPDF417Reader();
+ try{return await r.decodeFromImageElement(source)}finally{try{r.reset()}catch(e){}}
+}
+
+async function decodeCanvas(canvas){
+ const r=new ZXingBrowser.BrowserPDF417Reader();
+ try{return r.decodeFromCanvas(canvas)}finally{try{r.reset()}catch(e){}}
+}
+
+async function decodeImageWithVariants(img){
+ // 1) Imagen completa
+ try{return await decodeOne(img)}catch(e){}
+ const W=img.naturalWidth,H=img.naturalHeight;
+ // 2) Varios recortes: parte inferior, centro-inferior y franja ancha del PDF417.
+ const boxes=[
+  [0,Math.floor(H*.42),W,Math.floor(H*.58)],
+  [0,Math.floor(H*.50),W,Math.floor(H*.45)],
+  [Math.floor(W*.03),Math.floor(H*.42),Math.floor(W*.94),Math.floor(H*.50)],
+  [Math.floor(W*.05),Math.floor(H*.48),Math.floor(W*.90),Math.floor(H*.44)]
+ ];
+ for(const b of boxes){
+  const [x,y,w,h]=b;const c=document.createElement("canvas");
+  const scale=Math.min(2.5,Math.max(1,1800/w));c.width=Math.floor(w*scale);c.height=Math.floor(h*scale);
+  const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x,y,w,h,0,0,c.width,c.height);
+  try{return await decodeCanvas(c)}catch(e){}
+  // contraste en gris + binarización suave
+  const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
+  for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];const v=g>150?255:0;d[i]=d[i+1]=d[i+2]=v}
+  ctx.putImageData(im,0,0);
+  try{return await decodeCanvas(c)}catch(e){}
+ }
+ throw new Error("PDF417 no encontrado");
+}
+
 function parse(raw){
- const s=String(raw||"").replace(/\0/g," ").replace(/\s+/g," ").trim(), u=s.toUpperCase();
- // Cédula: candidatos largos. El usuario puede corregir.
+ const s=String(raw||"").replace(/\0/g," ").replace(/\s+/g," ").trim(),u=s.toUpperCase();
  const nums=[...s.matchAll(/\b\d{6,12}\b/g)].map(x=>x[0]).filter(x=>!/^19|^20/.test(x));
  if(nums.length)setv("cedula",nums[0]);
  const ds=[...s.matchAll(/\b(\d{2})[-\/](\d{2})[-\/](\d{4})\b/g)];
  if(ds.length)setv("fecha",`${ds[0][3]}-${ds[0][2]}-${ds[0][1]}`);
- let m=u.match(/\b(O|A|B|AB)\s*([+-])\b/);if(m)setv("rh",m[1]+m[2]);
+ const rh=u.match(/\b(O|A|B|AB)\s*([+-])\b/);if(rh)setv("rh",rh[1]+rh[2]);
  if(/\bFEMENINO\b/.test(u))setv("sexo","F");else if(/\bMASCULINO\b/.test(u))setv("sexo","M");
  const nm=s.match(/(?:APELLIDOS?|NOMBRES?)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ ]{5,70})/i);if(nm)setv("nombre",nm[1]);
 }
+
 function data(){let o={};F.forEach(f=>o[f]=$(f).value.trim());o.fechaRegistro=new Date().toLocaleString("es-CO");return o}
-function recs(){return JSON.parse(localStorage.getItem("dcm_v11")||"[]")}
+function recs(){return JSON.parse(localStorage.getItem("dcm_v12")||"[]")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function render(){const r=recs();$("count").textContent=r.length+" registro"+(r.length===1?"":"s");$("list").innerHTML=r.slice(-10).reverse().map(x=>`<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>${esc(x.nombre||"Sin nombre")}</b> · ${esc(x.cedula||"Sin cédula")} · ${esc(x.curso||"")}</div>`).join("")||"Aún no hay registros."}
-$("save").onclick=()=>{const o=data();if(!o.nombre||!o.cedula){alert("Diligencia Nombre completo y Número de identificación.");return}const r=recs();r.push(o);localStorage.setItem("dcm_v11",JSON.stringify(r));render();alert("Registro guardado.");};
+$("save").onclick=()=>{const o=data();if(!o.nombre||!o.cedula){alert("Diligencia Nombre completo y Número de identificación.");return}const r=recs();r.push(o);localStorage.setItem("dcm_v12",JSON.stringify(r));render();alert("Registro guardado.");};
 $("clear").onclick=()=>F.forEach(f=>$(f).value="");
 $("csv").onclick=()=>{const r=recs();if(!r.length){alert("No hay registros.");return}const H=F.concat(["fechaRegistro"]);const q=v=>`"${String(v??"").replaceAll('"','""')}"`;const csv="\ufeff"+H.map(q).join(";")+"\n"+r.map(o=>H.map(h=>q(o[h])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="DCM_registros.csv";a.click()};
 render();
