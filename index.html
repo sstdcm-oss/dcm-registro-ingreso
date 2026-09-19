@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>DCM Registro de Ingreso V18</title>
+<title>DCM Registro de Ingreso V19</title>
 <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@11.6.3200/dist/dbr.bundle.js"></script>
 <style>
 body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0;color:#182230}.wrap{max-width:760px;margin:auto;padding:16px}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px #0001}h1{font-size:22px;margin:0 0 5px;color:#1167a8}.sub{color:#667085;margin-bottom:14px}.badge{display:inline-block;background:#e8f3ff;color:#1268a6;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px}.preview{width:100%;max-height:430px;object-fit:contain;background:#111;border-radius:14px;margin-top:10px}.btn{width:100%;border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:800;margin-top:10px;cursor:pointer;background:#1677bd;color:#fff}.btn.secondary{background:#eef2f6;color:#263445}.status{padding:12px;border-radius:12px;background:#f5f7fa;margin-top:10px;white-space:pre-wrap}.ok{background:#eaf8ef;color:#146c35}.err{background:#fff1ef;color:#a52a22}label{display:block;font-weight:700;margin-top:10px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:12px;font-size:16px;margin-top:5px}textarea{min-height:80px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.grid{grid-template-columns:1fr}}.small{font-size:13px;color:#667085}.hide{display:none}.raw{font-family:monospace;font-size:12px;max-height:180px;overflow:auto;background:#101820;color:#d8f3ff;padding:10px;border-radius:10px;word-break:break-word}
 </style>
 </head>
 <body><div class="wrap">
-<div class="card"><span class="badge">V18 · MOTOR PROFESIONAL PDF417 + FOTO + MANUAL</span><h1>DCM Servicios & Consultoría</h1><div class="sub">Registro de ingreso — lectura de cédula colombiana</div>
+<div class="card"><span class="badge">V19 · PDF417 COLOMBIANO + MOTOR PROFESIONAL + FOTO + MANUAL</span><h1>DCM Servicios & Consultoría</h1><div class="sub">Registro de ingreso — lectura de cédula colombiana</div>
 <input id="photo" type="file" accept="image/*" capture="environment"><img id="preview" class="preview hide" alt="Foto de cédula"><button id="analyze" class="btn hide">🔎 ANALIZAR FOTO Y LEER PDF417</button><button id="camera" class="btn secondary">📷 PROBAR CÁMARA PDF417</button>
 <div id="status" class="status">Seleccione una foto del reverso de la cédula. V18 usa un motor especializado de lectura PDF417 directamente en el navegador.</div><div id="raw" class="raw hide"></div>
 </div>
@@ -24,20 +24,73 @@ const $=id=>document.getElementById(id);let currentFile=null,routerPromise=null,
 try{if(window.Dynamsoft?.License?.LicenseManager){Dynamsoft.License.LicenseManager.initLicense('DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9');}}catch(e){}
 function status(t,kind=''){const s=$('status');s.className='status '+kind;s.textContent=t}
 function pickResult(result){const items=(result?.items||[]).filter(x=>x.type===Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE);return items.find(x=>String(x.formatString||'').toUpperCase().includes('PDF417'))||items[0]||null}
-function parseText(text){const t=String(text||'').replace(/\r/g,'\n');const out={};out.raw=t;
- // The Colombian cédula PDF417 can contain structured byte/text data. Keep conservative parsing here.
- const idm=t.match(/(?:CC|ID|CEDULA|\b)[^0-9]{0,8}(\d{6,12})/i); if(idm)out.id=idm[1];
- const date=t.match(/(\d{2})[-\/.](\d{2})[-\/.](\d{4})/);if(date)out.fecha=`${date[1]}-${date[2]}-${date[3]}`;
- const sex=t.match(/(?:SEXO|SEX)[^A-Z]{0,5}([MF])/i);if(sex)out.sexo=sex[1].toUpperCase();
- const rh=t.match(/(?:G\.S\.\s*RH|RH|GRUPO)[^A-Z0-9]{0,8}([ABO][+-])/i);if(rh)out.rh=rh[1].toUpperCase();
- return out}
-function fill(p){if(p.id)$('id').value=p.id;if(p.fecha)$('fecha').value=p.fecha;if(p.sexo&&['M','F'].includes(p.sexo))$('sexo').value=p.sexo;if(p.rh)$('rh').value=p.rh;}
+function normalizeCedulaText(text){
+  return String(text||'')
+    .replace(/\u0000/g,' ')
+    .replace(/[\u0001-\u001F\u007F]/g,' ')
+    .replace(/[\uFFFD]/g,' ');
+}
+function parseColombianCedula(text){
+  const raw=normalizeCedulaText(text);
+  const low=raw.toLowerCase();
+  const out={raw};
+  const kw=low.indexOf('pubdsk');
+  let nameStart=-1;
+  if(kw>=0){
+    for(let i=kw+6;i<raw.length-1;i++){
+      if(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(raw[i]) && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(raw[i+1])){nameStart=i;break;}
+    }
+  }
+  // Colombian PDF417 layout: document number immediately precedes the name block.
+  if(nameStart>0){
+    let j=nameStart-1, digits='';
+    while(j>=0 && digits.length<12 && /\d/.test(raw[j])){digits=raw[j]+digits;j--;}
+    if(digits.length>=6) out.id=digits.replace(/^0+(?=\d)/,'');
+  }
+  if(!out.id){
+    const candidates=raw.match(/\d{6,12}/g)||[];
+    out.id=candidates.find(x=>x.length>=7 && x.length<=10) || candidates[0] || '';
+  }
+  let gender='';
+  let nameEnd=-1;
+  if(nameStart>=0){
+    const tail=low.slice(nameStart);
+    const mm=tail.search(/0m/), ff=tail.search(/0f/);
+    if(mm>=0 && (ff<0 || mm<ff)){nameEnd=nameStart+mm;gender='M';}
+    else if(ff>=0){nameEnd=nameStart+ff;gender='F';}
+  }
+  if(gender) out.sexo=gender;
+  if(nameStart>=0 && nameEnd>nameStart){
+    let n=raw.slice(nameStart,nameEnd)
+      .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/g,' ')
+      .replace(/\s+/g,' ').trim();
+    // Some readers concatenate the four name fields. Preserve separators when present;
+    // if there are no separators, expose the block instead of inventing a split.
+    if(n) out.nombre=n;
+  }
+  if(nameEnd>=0){
+    const after=raw.slice(nameEnd+2);
+    const dm=after.match(/(19|20)\d{6}/);
+    if(dm){
+      const ymd=dm[0];
+      out.fecha=`${ymd.slice(6,8)}-${ymd.slice(4,6)}-${ymd.slice(0,4)}`;
+    }
+  }
+  // Fallbacks for readers that insert spaces/control characters.
+  if(!out.sexo){const m=raw.match(/(?:^|\D)0\s*([MF])(?:\D|$)/i);if(m)out.sexo=m[1].toUpperCase();}
+  if(!out.fecha){const d=raw.match(/(19|20)(\d{2})(\d{2})(\d{2})/);if(d)out.fecha=`${d[4]}-${d[3]}-${d[1]}${d[2]}`;}
+  // RH is printed on the physical card but is not reliably present in the Colombian PDF417 payload.
+  const rh=raw.match(/(?:G\.?S\.?\s*RH|RH)[^A-Z0-9]{0,10}([ABO][+-])/i);if(rh)out.rh=rh[1].toUpperCase();
+  return out;
+}
+function parseText(text){ return parseColombianCedula(text); }
+function fill(p){if(p.nombre)$('nombre').value=p.nombre;if(p.id)$('id').value=p.id;if(p.fecha)$('fecha').value=p.fecha;if(p.sexo&&['M','F'].includes(p.sexo))$('sexo').value=p.sexo;if(p.rh)$('rh').value=p.rh;}
 async function getRouter(){router=router||await(routerPromise=routerPromise||Dynamsoft.CVR.CaptureVisionRouter.createInstance());return router}
 async function decodeFile(file){status('⏳ Iniciando motor profesional PDF417...');const r=await getRouter();let result=await r.capture(file,'ReadBarcodes_SpeedFirst');let item=pickResult(result);if(!item){status('⏳ Primer intento sin lectura. Probando plantilla de mayor cobertura...');result=await r.capture(file,'ReadBarcodes_Default');item=pickResult(result)}return item}
 $('photo').addEventListener('change',()=>{const f=$('photo').files[0];if(!f)return;currentFile=f;$('preview').src=URL.createObjectURL(f);$('preview').classList.remove('hide');$('analyze').classList.remove('hide');status('Foto cargada. Pulse ANALIZAR FOTO Y LEER PDF417.')});
 $('analyze').onclick=async()=>{if(!currentFile)return;$('analyze').disabled=true;$('raw').classList.add('hide');try{const item=await decodeFile(currentFile);if(!item)throw new Error('No se encontró un PDF417');const text=item.text||'';const p=parseText(text);fill(p);$('raw').textContent='PDF417 leído:\n'+text;$('raw').classList.remove('hide');status('✅ PDF417 leído correctamente. Revise los datos y complete el formulario.','ok')}catch(e){status('❌ El motor profesional tampoco pudo leer este PDF417 desde esta fotografía. Puede continuar manualmente.\n\nDetalle: '+(e.message||e),'err')}finally{$('analyze').disabled=false}};
 $('camera').onclick=async()=>{try{status('⏳ Preparando cámara PDF417...');const r=await getRouter();const settings=await r.getSimplifiedSettings('ReadSingleBarcode');settings.barcodeSettings.barcodeFormatIds=Dynamsoft.DBR.EnumBarcodeFormat.BF_PDF417;await r.updateSettings('ReadSingleBarcode',settings);const view=await Dynamsoft.DCE.CameraView.createInstance();const enhancer=await Dynamsoft.DCE.CameraEnhancer.createInstance(view);const box=document.createElement('div');box.style='position:fixed;inset:0;background:#000;z-index:9999;';const close=document.createElement('button');close.textContent='✕ CERRAR';close.style='position:absolute;top:18px;right:18px;z-index:3;padding:12px;border:0;border-radius:10px;font-weight:bold';box.appendChild(close);const holder=document.createElement('div');holder.style='width:100%;height:100%';box.appendChild(holder);document.body.appendChild(box);holder.append(view.getUIElement());const receiver={onDecodedBarcodesReceived:(res)=>{const item=(res.barcodeResultItems||[]).find(x=>String(x.formatString||'').toUpperCase().includes('PDF417'));if(item){const p=parseText(item.text);fill(p);$('raw').textContent='PDF417 leído:\n'+item.text;$('raw').classList.remove('hide');status('✅ PDF417 leído por cámara. Revise los datos.','ok');close.click()}}};await r.addResultReceiver(receiver);await r.startCapturing('ReadSingleBarcode');close.onclick=async()=>{try{await r.stopCapturing();}catch(e){}try{enhancer.close();}catch(e){}box.remove()};}catch(e){status('❌ No se pudo iniciar la cámara PDF417. Puede usar FOTO o diligenciar manualmente.\n\n'+(e.message||e),'err')}};
 function getRecord(){return {fechaRegistro:new Date().toLocaleString('es-CO'),nombre:$('nombre').value.trim(),id:$('id').value.trim(),fechaNacimiento:$('fecha').value.trim(),sexo:$('sexo').value,rh:$('rh').value.trim(),telefono:$('telefono').value.trim(),correo:$('correo').value.trim(),empresa:$('empresa').value.trim(),nit:$('nit').value.trim(),arl:$('arl').value.trim(),eps:$('eps').value.trim(),curso:$('curso').value,contactoEmergencia:$('emergencia').value.trim(),telefonoEmergencia:$('emergenciaTel').value.trim(),observaciones:$('observaciones').value.trim()}}
-$('save').onclick=()=>{const r=getRecord();if(!r.nombre||!r.id){$('saveStatus').className='status err';$('saveStatus').textContent='Complete como mínimo nombre e identificación.';return}const a=JSON.parse(localStorage.getItem('dcm_v18')||'[]');a.push(r);localStorage.setItem('dcm_v18',JSON.stringify(a));$('saveStatus').className='status ok';$('saveStatus').textContent='✅ Registro guardado en este dispositivo.'}
-$('csv').onclick=()=>{const a=JSON.parse(localStorage.getItem('dcm_v18')||'[]');if(!a.length){$('saveStatus').textContent='No hay registros guardados.';return}const keys=Object.keys(a[0]);const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';const csv='\ufeff'+keys.map(esc).join(';')+'\n'+a.map(r=>keys.map(k=>esc(r[k])).join(';')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const x=document.createElement('a');x.href=url;x.download='DCM_registros.csv';x.click();URL.revokeObjectURL(url)};
+$('save').onclick=()=>{const r=getRecord();if(!r.nombre||!r.id){$('saveStatus').className='status err';$('saveStatus').textContent='Complete como mínimo nombre e identificación.';return}const a=JSON.parse(localStorage.getItem('dcm_v19')||'[]');a.push(r);localStorage.setItem('dcm_v19',JSON.stringify(a));$('saveStatus').className='status ok';$('saveStatus').textContent='✅ Registro guardado en este dispositivo.'}
+$('csv').onclick=()=>{const a=JSON.parse(localStorage.getItem('dcm_v19')||'[]');if(!a.length){$('saveStatus').textContent='No hay registros guardados.';return}const keys=Object.keys(a[0]);const esc=v=>'"'+String(v??'').replaceAll('"','""')+'"';const csv='\ufeff'+keys.map(esc).join(';')+'\n'+a.map(r=>keys.map(k=>esc(r[k])).join(';')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const x=document.createElement('a');x.href=url;x.download='DCM_registros_V19.csv';x.click();URL.revokeObjectURL(url)};
 </script></body></html>
