@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DCM Registro de Ingreso V13</title>
+<title>DCM Registro de Ingreso V14</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f5;color:#17212b}
 header{background:#123b5d;color:#fff;padding:18px}.wrap{max-width:780px;margin:auto;padding:14px}
@@ -15,36 +15,32 @@ video,img.preview{display:block;width:100%;max-height:58vh;background:#111;borde
 button{border:0;border-radius:10px;padding:13px 16px;margin:7px 5px 0 0;font-weight:700;font-size:16px}.primary{background:#1769aa;color:white}.green{background:#16824c;color:white}.gray{background:#dce3e8}.orange{background:#d97904;color:white}
 input,select,textarea{width:100%;padding:13px;border:1px solid #b9c3ca;border-radius:10px;font-size:16px;margin-top:5px}label{display:block;font-weight:700;margin-top:12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.small{font-size:13px;color:#5d6870}.badge{display:inline-block;background:#e8f0f6;padding:5px 9px;border-radius:18px;font-size:12px}
-#photoInput{display:none}.hidden{display:none}@media(max-width:560px){.row{grid-template-columns:1fr}}
+#photoInput{display:none}.hidden{display:none}.progress{font-size:13px;line-height:1.55;margin-top:10px;background:#f6f8fa;padding:10px;border-radius:8px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1>DCM — Registro de Ingreso</h1><div>V13 · foto PDF417 con botón de análisis + cámara + manual</div></header>
+<header><h1>DCM — Registro de Ingreso</h1><div>V14 · foto + botón de análisis PDF417 + manual</div></header>
 <div class="wrap">
 
 <div class="card">
 <h2>1. Identificar la cédula</h2>
-<div class="status warn"><b>Foto:</b> primero selecciona o toma la foto. Después pulsa <b>🔎 ANALIZAR FOTO</b>. Así la lectura no empieza automáticamente.</div>
+<div class="status warn"><b>Así funciona:</b> seleccionas la foto primero. Después pulsas el botón azul. La lectura comienza únicamente cuando tú lo ordenas.</div>
 
-<div class="frame"><video id="video" playsinline muted></video><div class="guide" id="guide"></div></div>
-<div id="status" class="status">Elige una opción.</div>
+<div class="frame"><video id="video" playsinline muted></video><div class="guide"></div></div>
+<div id="status" class="status">Selecciona una foto o inicia la cámara.</div>
 
 <button id="start" class="primary">📷 Cámara en vivo</button>
-<button id="torch" class="gray">🔦 Luz</button>
 <button id="stop" class="gray">Detener</button>
-
 <hr style="border:0;border-top:1px solid #ddd;margin:16px 0">
 
-<button id="choose" class="orange">🖼️ Seleccionar foto</button>
-<button id="capture" class="gray">📸 Tomar foto</button>
+<button id="choose" class="orange">🖼️ SELECCIONAR FOTO</button>
 <input id="photoInput" type="file" accept="image/*">
 <img id="preview" class="preview hidden" style="margin-top:10px">
 
-<div id="photoActions" class="hidden">
-  <button id="analyze" class="primary" style="width:100%;font-size:18px">🔎 ANALIZAR FOTO Y LEER PDF417</button>
-</div>
-
-<p class="small">Recomendación: foto del reverso completo, buena iluminación, sin reflejos y con el PDF417 lo más grande y nítido posible.</p>
+<button id="analyze" class="primary hidden" style="width:100%;font-size:18px">🔎 ANALIZAR FOTO Y LEER PDF417</button>
+<div id="progress" class="progress hidden"></div>
+<p class="small">Usa una foto clara del reverso. El análisis busca el PDF417; no usa OCR de letras.</p>
 </div>
 
 <div class="card">
@@ -82,109 +78,128 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #b9c3ca;border-ra
 <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 <script>
 const $=id=>document.getElementById(id);
-let reader=null,controls=null,track=null,torch=false,selectedImage=null,selectedUrl=null;
 const F=["nombre","cedula","fecha","sexo","rh","telefono","correo","empresa","nit","arl","eps","curso","emergencia","emergenciaTel","observaciones"];
+let selectedImage=null, selectedUrl=null, cameraReader=null, cameraControls=null;
 
 function stat(t,c=""){ $("status").className="status "+c; $("status").innerHTML=t; }
-function stop(){
- try{if(controls)controls.stop()}catch(e){} controls=null;
- try{if(reader)reader.reset()}catch(e){} reader=null;
- try{if(track)track.stop()}catch(e){} track=null;
- const v=$("video"); if(v.srcObject)v.srcObject=null;
-}
+function progress(t){$("progress").classList.remove("hidden");$("progress").innerHTML=t}
 function setv(id,v){if(v && String(v).trim())$(id).value=String(v).trim()}
 
+function stopCamera(){
+ try{cameraControls?.stop()}catch(e){} cameraControls=null;
+ try{cameraReader?.reset()}catch(e){} cameraReader=null;
+ const v=$("video");try{v.srcObject?.getTracks().forEach(t=>t.stop())}catch(e){}v.srcObject=null;
+}
+$("stop").onclick=stopCamera;
+
 $("start").onclick=async()=>{
- stop(); $("preview").classList.add("hidden");
+ stopCamera();
  try{
-  reader=new ZXingBrowser.BrowserPDF417Reader();
-  stat("🔎 Buscando PDF417… acerca o aleja lentamente la cédula.");
-  controls=await reader.decodeFromConstraints({
-   video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1440},frameRate:{ideal:30}}
-  },$("video"),(result,err)=>{
-   if(result){parse(result.getText());stat("✅ PDF417 leído. Revisa los datos antes de guardar.","ok");stop();}
-  });
-  const s=$("video").srcObject; track=s?.getVideoTracks?.()[0]||null;
- }catch(e){console.error(e);stat("⚠️ No se pudo iniciar la cámara. Puedes usar una foto o digitar manualmente.","warn")}
-};
-$("stop").onclick=stop;
-$("torch").onclick=async()=>{
- try{
-  if(!track)track=$("video").srcObject?.getVideoTracks?.()[0];
-  if(!track){stat("Primero inicia la cámara.","warn");return}
-  const caps=track.getCapabilities();if(!caps.torch){stat("La luz no puede controlarse desde este teléfono.","warn");return}
-  torch=!torch;await track.applyConstraints({advanced:[{torch}]});
- }catch(e){stat("No fue posible cambiar la luz.","warn")}
+  const hints=new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.PDF_417]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+  cameraReader=new ZXingBrowser.BrowserMultiFormatReader(hints);
+  stat("🔎 Buscando PDF417 en la cámara…");
+  cameraControls=await cameraReader.decodeFromConstraints(
+   {video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}},
+   $("video"),
+   (result,err)=>{
+    if(result){parse(result.getText());stat("✅ PDF417 leído. Revisa los datos.","ok");stopCamera();}
+   }
+  );
+ }catch(e){console.error(e);stat("⚠️ No se pudo iniciar la cámara. Puedes usar una foto o el formulario manual.","warn")}
 };
 
-$("choose").onclick=()=>{stop();$("photoInput").click()};
+$("choose").onclick=()=>$("photoInput").click();
+
 $("photoInput").onchange=e=>{
- const f=e.target.files?.[0];if(f)showPhoto(f);
+ const file=e.target.files?.[0];
+ if(!file)return;
+ if(selectedUrl)URL.revokeObjectURL(selectedUrl);
+ selectedUrl=URL.createObjectURL(file);
+ const img=$("preview");
+ img.classList.remove("hidden");
+ img.src=selectedUrl;
+ img.onload=()=>{
+  selectedImage=img;
+  $("analyze").classList.remove("hidden");
+  $("progress").classList.add("hidden");
+  stat("📷 Foto lista. Ahora pulsa <b>🔎 ANALIZAR FOTO Y LEER PDF417</b>.");
+ };
+ img.onerror=()=>stat("No se pudo abrir la foto.","err");
  e.target.value="";
 };
-$("capture").onclick=async()=>{
- try{
-  if(!$("video").srcObject){
-   await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}}).then(s=>{$("video").srcObject=s});
-  }
-  const v=$("video"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
-  c.toBlob(b=>showPhoto(b),"image/jpeg",.96);
- }catch(e){stat("No se pudo tomar la foto. Usa “Seleccionar foto”.","warn")}
-};
-
-function showPhoto(blob){
- if(selectedUrl)URL.revokeObjectURL(selectedUrl);
- selectedUrl=URL.createObjectURL(blob);
- const img=$("preview");img.src=selectedUrl;img.classList.remove("hidden");
- selectedImage=img;
- $("photoActions").classList.remove("hidden");
- stat("📷 Foto cargada. Ahora pulsa <b>🔎 ANALIZAR FOTO Y LEER PDF417</b>.");
-}
 
 $("analyze").onclick=async()=>{
- if(!selectedImage){stat("Primero selecciona o toma una foto.","warn");return}
- stat("⏳ Analizando la foto… buscando el PDF417. Espera unos segundos.");
- $("analyze").disabled=true;
+ if(!selectedImage){stat("Primero selecciona una foto.","warn");return}
+ const btn=$("analyze");btn.disabled=true;
+ progress("⏳ Iniciando lector…<br>1/4 Preparando imagen");
+ stat("⏳ Analizando la foto…");
  try{
-  const result=await decodeVariants(selectedImage);
+  const result=await decodePhoto(selectedImage);
+  progress("✅ PDF417 encontrado.");
   parse(result.getText());
-  stat("✅ ¡PDF417 encontrado en la foto! Revisa los datos antes de guardar.","ok");
+  stat("✅ ¡Cédula leída! Revisa los datos antes de guardar.","ok");
  }catch(e){
   console.error(e);
-  stat("❌ No se encontró un PDF417 legible en esta foto. Prueba una foto más cercana/nítida o continúa manualmente.","warn");
- }finally{$("analyze").disabled=false}
+  progress("❌ No se encontró un PDF417 en los intentos realizados.");
+  stat("❌ No se pudo leer el PDF417 de esta foto. Puedes probar otra foto o continuar manualmente.","warn");
+ }finally{btn.disabled=false}
 };
 
-async function decodeVariants(img){
- const r1=new ZXingBrowser.BrowserPDF417Reader();
- try{return await r1.decodeFromImageElement(img)}catch(e){}finally{try{r1.reset()}catch(e){}}
+async function decodeReaderImage(reader,img){
+ return await reader.decodeFromImageElement(img);
+}
+async function tryReader(img,hints){
+ const r=new ZXingBrowser.BrowserMultiFormatReader(hints);
+ try{return await decodeReaderImage(r,img)}finally{try{r.reset()}catch(e){}}
+}
+async function tryPdfReader(img){
+ const r=new ZXingBrowser.BrowserPDF417Reader();
+ try{return await decodeReaderImage(r,img)}finally{try{r.reset()}catch(e){}}
+}
+
+async function decodePhoto(img){
+ const hints=new Map();
+ hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.PDF_417]);
+ hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+ progress("⏳ 1/4 Preparando imagen<br>2/4 Probando PDF417 directo");
+ try{return await tryPdfReader(img)}catch(e){}
+ progress("⏳ 2/4 Probando lector PDF417 con TRY_HARDER");
+ try{return await tryReader(img,hints)}catch(e){}
+
  const W=img.naturalWidth,H=img.naturalHeight;
  const boxes=[
-  [0,H*.35,W,H*.65],
-  [0,H*.45,W,H*.50],
-  [W*.02,H*.50,W*.96,H*.45],
-  [W*.05,H*.55,W*.90,H*.38]
+  [0,H*.30,W,H*.70],
+  [0,H*.42,W,H*.50],
+  [W*.02,H*.48,W*.96,H*.48],
+  [W*.04,H*.55,W*.92,H*.40],
+  [0,H*.55,W,H*.40]
  ];
- for(const b of boxes){
-  const [x,y,w,h]=b, c=document.createElement("canvas");
-  const scale=Math.max(1.5,Math.min(3,2200/w));
+ let n=0;
+ for(const [x,y,w,h] of boxes){
+  n++;
+  progress(`⏳ 3/4 Buscando el código en la zona ${n} de ${boxes.length}`);
+  const c=document.createElement("canvas");
+  const scale=Math.max(1.5,Math.min(3,2400/w));
   c.width=Math.floor(w*scale);c.height=Math.floor(h*scale);
   const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=false;
   ctx.drawImage(img,x,y,w,h,0,0,c.width,c.height);
-  for(const mode of [0,1,2]){
-   if(mode===1){
-    const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
-    for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];d[i]=d[i+1]=d[i+2]=g;};ctx.putImageData(im,0,0);
-   }
-   if(mode===2){
-    const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;
-    for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];const v=g>145?255:0;d[i]=d[i+1]=d[i+2]=v;};ctx.putImageData(im,0,0);
-   }
-   const r=new ZXingBrowser.BrowserPDF417Reader();
-   try{return await r.decodeFromCanvas(c)}catch(e){}finally{try{r.reset()}catch(e){}}
-  }
+  const ci=new Image();ci.src=c.toDataURL("image/jpeg",.98);
+  await new Promise((resolve,reject)=>{ci.onload=resolve;ci.onerror=reject});
+  try{return await tryPdfReader(ci)}catch(e){}
+  try{return await tryReader(ci,hints)}catch(e){}
+  // Variante escala de grises
+  const data=ctx.getImageData(0,0,c.width,c.height),d=data.data;
+  for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];d[i]=d[i+1]=d[i+2]=g}
+  ctx.putImageData(data,0,0);
+  const gray=new Image();gray.src=c.toDataURL("image/png");
+  await new Promise((resolve,reject)=>{gray.onload=resolve;gray.onerror=reject});
+  try{return await tryPdfReader(gray)}catch(e){}
+  try{return await tryReader(gray,hints)}catch(e){}
  }
- throw new Error("PDF417 no encontrado");
+ progress("⏳ 4/4 Terminó la búsqueda");
+ throw new Error("No PDF417");
 }
 
 function parse(raw){
@@ -199,10 +214,10 @@ function parse(raw){
 }
 
 function data(){let o={};F.forEach(f=>o[f]=$(f).value.trim());o.fechaRegistro=new Date().toLocaleString("es-CO");return o}
-function recs(){return JSON.parse(localStorage.getItem("dcm_v13")||"[]")}
+function recs(){return JSON.parse(localStorage.getItem("dcm_v14")||"[]")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function render(){const r=recs();$("count").textContent=r.length+" registro"+(r.length===1?"":"s");$("list").innerHTML=r.slice(-10).reverse().map(x=>`<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>${esc(x.nombre||"Sin nombre")}</b> · ${esc(x.cedula||"Sin cédula")} · ${esc(x.curso||"")}</div>`).join("")||"Aún no hay registros."}
-$("save").onclick=()=>{const o=data();if(!o.nombre||!o.cedula){alert("Diligencia Nombre completo y Número de identificación.");return}const r=recs();r.push(o);localStorage.setItem("dcm_v13",JSON.stringify(r));render();alert("Registro guardado.");};
+$("save").onclick=()=>{const o=data();if(!o.nombre||!o.cedula){alert("Diligencia Nombre completo y Número de identificación.");return}const r=recs();r.push(o);localStorage.setItem("dcm_v14",JSON.stringify(r));render();alert("Registro guardado.");};
 $("clear").onclick=()=>F.forEach(f=>$(f).value="");
 $("csv").onclick=()=>{const r=recs();if(!r.length){alert("No hay registros.");return}const H=F.concat(["fechaRegistro"]);const q=v=>`"${String(v??"").replaceAll('"','""')}"`;const csv="\ufeff"+H.map(q).join(";")+"\n"+r.map(o=>H.map(h=>q(o[h])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="DCM_registros.csv";a.click()};
 render();
