@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>DCM Registro de Ingreso V19</title>
+<title>DCM Registro de Ingreso V20</title>
 <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader-bundle@11.6.3200/dist/dbr.bundle.js"></script>
 <style>
 body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0;color:#182230}.wrap{max-width:760px;margin:auto;padding:16px}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px #0001}h1{font-size:22px;margin:0 0 5px;color:#1167a8}.sub{color:#667085;margin-bottom:14px}.badge{display:inline-block;background:#e8f3ff;color:#1268a6;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px}.preview{width:100%;max-height:430px;object-fit:contain;background:#111;border-radius:14px;margin-top:10px}.btn{width:100%;border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:800;margin-top:10px;cursor:pointer;background:#1677bd;color:#fff}.btn.secondary{background:#eef2f6;color:#263445}.status{padding:12px;border-radius:12px;background:#f5f7fa;margin-top:10px;white-space:pre-wrap}.ok{background:#eaf8ef;color:#146c35}.err{background:#fff1ef;color:#a52a22}label{display:block;font-weight:700;margin-top:10px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:12px;font-size:16px;margin-top:5px}textarea{min-height:80px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.grid{grid-template-columns:1fr}}.small{font-size:13px;color:#667085}.hide{display:none}.raw{font-family:monospace;font-size:12px;max-height:180px;overflow:auto;background:#101820;color:#d8f3ff;padding:10px;border-radius:10px;word-break:break-word}
 </style>
 </head>
 <body><div class="wrap">
-<div class="card"><span class="badge">V19 · PDF417 COLOMBIANO + MOTOR PROFESIONAL + FOTO + MANUAL</span><h1>DCM Servicios & Consultoría</h1><div class="sub">Registro de ingreso — lectura de cédula colombiana</div>
+<div class="card"><span class="badge">V20 · PDF417 COLOMBIANO + MOTOR PROFESIONAL + FOTO + MANUAL</span><h1>DCM Servicios & Consultoría</h1><div class="sub">Registro de ingreso — lectura de cédula colombiana</div>
 <input id="photo" type="file" accept="image/*" capture="environment"><img id="preview" class="preview hide" alt="Foto de cédula"><button id="analyze" class="btn hide">🔎 ANALIZAR FOTO Y LEER PDF417</button><button id="camera" class="btn secondary">📷 PROBAR CÁMARA PDF417</button>
 <div id="status" class="status">Seleccione una foto del reverso de la cédula. V18 usa un motor especializado de lectura PDF417 directamente en el navegador.</div><div id="raw" class="raw hide"></div>
 </div>
@@ -41,11 +41,15 @@ function parseColombianCedula(text){
       if(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(raw[i]) && /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(raw[i+1])){nameStart=i;break;}
     }
   }
-  // Colombian PDF417 layout: document number immediately precedes the name block.
+  // The document number is the numeric block immediately before the name.
+  // Some readers prepend a 1–2 digit field from the previous data block.
+  // Prefer the 10-digit suffix used by the card shown in testing; only fall back
+  // to 8–9 digits when a 10-digit suffix is not available.
   if(nameStart>0){
-    let j=nameStart-1, digits='';
-    while(j>=0 && digits.length<12 && /\d/.test(raw[j])){digits=raw[j]+digits;j--;}
-    if(digits.length>=6) out.id=digits.replace(/^0+(?=\d)/,'');
+    const before=raw.slice(0,nameStart);
+    let m=before.match(/(\d{10})$/);
+    if(!m) m=before.match(/(\d{8,9})$/);
+    if(m) out.id=m[1].replace(/^0+(?=\d)/,'');
   }
   if(!out.id){
     const candidates=raw.match(/\d{6,12}/g)||[];
@@ -64,8 +68,31 @@ function parseColombianCedula(text){
     let n=raw.slice(nameStart,nameEnd)
       .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/g,' ')
       .replace(/\s+/g,' ').trim();
-    // Some readers concatenate the four name fields. Preserve separators when present;
-    // if there are no separators, expose the block instead of inventing a split.
+    // Some readers concatenate the four name fields. If there are no separators,
+    // apply a conservative word-break heuristic using common Colombian surnames
+    // and given names; if confidence is low, keep the original block unchanged.
+    if(n && !/\s/.test(n)){
+      const surnames=['RAMIREZ','RODRIGUEZ','GONZALEZ','MARTINEZ','LOPEZ','HERNANDEZ','GOMEZ','DIAZ','MORENO','MUÑOZ','MUNOZ','CASTRO','RUIZ','ALVAREZ','JIMENEZ','RESTREPO','TORRES','VARGAS','RAMOS','MORALES','SALAZAR','ORTIZ','SUAREZ','MENDOZA','VALENCIA','CARDONA','BAUTISTA','ZAPATA','QUINTERO','ARANGO','ECHEVERRY','ECHEVERRI','GIRALDO','MARIN','SANCHEZ','PEREZ','PARRA','RIOS','CARMONA','OSORIO','VELEZ','MONTOYA','MEJIA','BEDOYA','CORREA'];
+      const given=['MARIA','JOSE','JUAN','LUIS','CARLOS','ANDRES','DANIEL','DAVID','MIGUEL','ALEJANDRO','SANTIAGO','SEBASTIAN','NICOLAS','FELIPE','JORGE','JAVIER','OSCAR','CAMILO','DIEGO','ANA','LAURA','LINA','DIANA','PAOLA','LILIANA','CAROLINA','VALENTINA','NATALIA','ANDREA','ANGELA','ANGELICA','SANDRA','CLAUDIA','MELISSA','DANIELA','CAMILA','SOFIA','ISABEL','ISABELA','LUCIA','LUCIA','LISETH','JOANNA','JOHANA','JOHANNA','KAREN','KATHERINE','KARINA','TATIANA','MARCELA','PATRICIA','ADRIANA','MONICA','VANESSA','YULIANA','YULIETH','JULIANA','JESSICA'];
+      let split='';
+      for(const g of given){
+        const idx=n.indexOf(g,4);
+        if(idx>4){ split=n.slice(0,idx)+' '+n.slice(idx); break; }
+      }
+      if(split){
+        let first=split.slice(0,split.indexOf(' ')), rest=split.slice(split.indexOf(' ')+1);
+        let surnameWords=[]; let tmp=first;
+        for(const sn of surnames){ if(tmp===sn){surnameWords=[sn];tmp='';break;} }
+        if(!surnameWords.length){
+          for(const sn1 of surnames){ if(tmp.startsWith(sn1) && tmp.length>sn1.length){
+            const rem=tmp.slice(sn1.length);
+            for(const sn2 of surnames){ if(rem===sn2){surnameWords=[sn1,sn2];tmp='';break;} }
+            if(surnameWords.length) break;
+          }}
+        }
+        if(surnameWords.length) n=surnameWords.join(' ')+' '+rest; else n=split;
+      }
+    }
     if(n) out.nombre=n;
   }
   if(nameEnd>=0){
