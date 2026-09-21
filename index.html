@@ -14,7 +14,14 @@ body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0;color:#182230}.wra
 <div id="status" class="status">Seleccione una foto del reverso de la cédula. V18 usa un motor especializado de lectura PDF417 directamente en el navegador.</div><div id="raw" class="raw hide"></div>
 </div>
 <div class="card"><h2>Datos de identificación</h2><div class="small">Si la lectura no funciona, diligencie estos campos manualmente.</div><label>Nombre completo<input id="nombre"></label><div class="grid"><div><label>Número de identificación<input id="id"></label></div><div><label>Fecha de nacimiento<input id="fecha" placeholder="DD-MM-AAAA"></label></div></div><div class="grid"><div><label>Sexo<select id="sexo"><option value="">Seleccione</option><option>M</option><option>F</option></select></label></div><div><label>RH<input id="rh" placeholder="Ej. O+"></label></div></div></div>
-<div class="card"><h2>Datos de contacto y empresa</h2><div class="grid"><div><label>Teléfono<input id="telefono"></label></div><div><label>Correo<input id="correo" type="email"></label></div></div><div class="grid"><div><label>Empresa<input id="empresa"></label></div><div><label>NIT<input id="nit"></label></div></div><div class="grid"><div><label>ARL<input id="arl"></label></div><div><label>EPS<input id="eps"></label></div></div><label>Curso<select id="curso"><option value="">Seleccione</option><option>Reentrenamiento</option><option>Coordinador</option><option>Básico</option><option>Avanzado</option><option>Otro</option></select></label></div>
+<div class="card"><h2>Datos de contacto y empresa</h2><div class="grid"><div><label>Teléfono<input id="telefono"></label></div><div><label>Correo<input id="correo" type="email"></label></div></div><div class="grid"><div><label>Empresa<input id="empresa"></label></div><div><label>NIT<input id="nit"></label></div></div><div class="grid"><div><label>ARL<input id="arl"></label></div><div><label>EPS<input id="eps"></label></div></div><label>Curso<select id="curso"><option value="">Seleccione</option><option><Trabajador autorizado</option><option value="">Seleccione</option>
+<option value="">Seleccione</option><option>Trabajador autorizado</option>
+<option>Reentrenamiento</option>
+<option>Coordinador de trabajo en alturas</option>
+<option>Jefe de área para trabajo en alturas</option>
+<option>Armador de andamios</option>
+<option>Rescate en alturas</option>
+</select></label></div>
 <div class="card"><h2>Contacto de emergencia</h2><div class="grid"><div><label>Nombre<input id="emergencia"></label></div><div><label>Teléfono<input id="emergenciaTel"></label></div></div><label>Observaciones<textarea id="observaciones"></textarea></label></div>
 <div class="card"><button id="save" class="btn">💾 GUARDAR REGISTRO</button><button id="csv" class="btn secondary">📊 EXPORTAR REGISTROS A CSV</button><div id="saveStatus" class="status"></div></div>
 </div>
